@@ -1,0 +1,3 @@
+# before using type sage -sh
+# in shell run pip install py_ecc
+
