@@ -1,19 +1,20 @@
-def matrix_to_polynomials(matrix):
-    row, col = matrix.nrows(), matrix.ncols() poly_list = []
+def matrix_to_polynomials(matrix, FF):
+    row, col = matrix.nrows(), matrix.ncols()
+    poly_list = []
     for i in range(col):
         points = []
         for j in range(row):
-            x = F(j+1)
+            x = FF(j+1)
             y = matrix[j][i]
             points.append((x, y))
-        poly = P.lagrange_polynomial(points)
+        poly = PR_k.lagrange_polynomial(points)
         coefs = poly.list()[::-1]
         print(f"coefs == {coefs}")
         if len(coefs) < row:
             coefs = [0] * (row - len(coefs)) + coefs
         print(coefs)
         poly_list.append(coefs[::-1])
-    return Matrix(F, poly_list)
+    return Matrix(FF, poly_list)
 
 
 
@@ -33,6 +34,6 @@ def create_vanishing_polynomial(U, V, W, matrix):
 def test_vanishing_polynomial(U, V, W, matrix):
     T, h, rem = create_vanishing_polynomial(U, V, W, matrix)
     for i in range(1, 100):
-        tau = F.random_element()
+        tau = FF.random_element()
         assert(U * V == W + h * T)
     print("GOOOOL")

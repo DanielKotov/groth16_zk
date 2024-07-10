@@ -1,0 +1,4 @@
+*.swp
+*.tmp
+*.sage.py
+__pycache__/
