@@ -15,21 +15,47 @@ def matrix_to_polynomials(matrix, FF):
     return Matrix(FF, poly_list)
 
 
+def create_zd(ncols): return [i for i in range(1, ncols+1)]
 
-def create_vanishing_polynomial(U, V, W, nrows):
-    T = (k - 1)
-    for j in range(2, nrows):
-        T *= (k - j)
-    print("\nT=", T)
-    for i in range(1, nrows+1):
-        print(f"T({i}) == ", T(i))
+
+def create_target_polynomial(Z_d):
+    T = (k - Z_d[0])
+    for j in range(1, len(Z_d)):
+        T *= (k - Z_d[j])
+    return T
+
+
+def create_vanishing_polynomial(U, V, W, Z_d):
+    T = create_target_polynomial(Z_d)
     h = (U * V - W) // T
-    return T, h.list()
+    return h.list()
 
 
-def test_vanishing_polynomial(U, V, W, matrix):
-    T, h = create_vanishing_polynomial(U, V, W, matrix)
+def test_vanishing_polynomial(U, V, W, T, h):
+    h = PR_k(h)
     for i in range(1, 100):
         tau = FF.random_element()
         assert(U * V == W + h * T)
     print("GOOOOL")
+
+
+def qap_instance(L, R, O, w):
+    Lw = L * w
+    Rw = R * w
+    Ow = O * w
+
+    LRw = Lw.pairwise_product(Rw)
+
+    Lp = matrix_to_polynomials(L, FF)
+    Rp = matrix_to_polynomials(R, FF)
+    Op = matrix_to_polynomials(O, FF)
+
+    A = PR_k((w * Lp).list())
+    B = PR_k((w * Rp).list())
+    C = PR_k((w * Op).list())
+
+    Z_d = create_zd(L.ncols())
+    T = create_target_polynomial(Z_d)
+    h = create_vanishing_polynomial(A, B, C, Z_d)
+    return Lp, Rp, Op, T, h
+
