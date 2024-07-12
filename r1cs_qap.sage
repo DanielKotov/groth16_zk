@@ -22,12 +22,15 @@ def create_target_polynomial(Z_d):
     T = (k - Z_d[0])
     for j in range(1, len(Z_d)):
         T *= (k - Z_d[j])
+    assert(T.degree() == len(Z_d))
+    print(f"Target polynomial degree = {T.degree()}")
     return T
 
 
 def create_vanishing_polynomial(U, V, W, Z_d):
     T = create_target_polynomial(Z_d)
     h = (U * V - W) // T
+    print(f"vanishing polynomial degree = {h.degree()}")
     return h.list()
 
 
@@ -54,8 +57,9 @@ def qap_instance(L, R, O, w):
     B = PR_k((w * Rp).list())
     C = PR_k((w * Op).list())
 
-    Z_d = create_zd(L.ncols())
+    Z_d = create_zd(L.nrows())
     T = create_target_polynomial(Z_d)
+    print(f"qap_instance function:\n T == {T}")
     h = create_vanishing_polynomial(A, B, C, Z_d)
     return Lp, Rp, Op, T, h
 

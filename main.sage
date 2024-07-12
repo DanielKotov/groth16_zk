@@ -8,7 +8,8 @@ def setup(k, apoly, bpoly, cpoly, n, T):
 
     k_vk, k_pk, z_d = [], [], []
     apoly1, bpoly1, bpoly2 = [], [], []
-    for i in range(0, n+1):
+    # проебался с индексами
+    for i in range(0, n):
         apoly1.append(multiply(G1, int(PR_k(apoly[i].list())(tau))))
         bpoly1.append(multiply(G1, int(PR_k(bpoly[i].list())(tau))))
         bpoly2.append(multiply(G2, int(PR_k(bpoly[i].list())(tau))))
@@ -22,9 +23,9 @@ def setup(k, apoly, bpoly, cpoly, n, T):
             k_pki = 1/delta * (beta * a_it + alpha * b_it + c_it)
             k_pk.append(multiply(G1, int(k_pki)))
 
-    print(f"Polynomial T in setup function:\n {T}")
-    for j in range(0, T.degree()):
+    for j in range(0, T.degree() - 1):
         z_d.append(multiply(G1, int(1/delta * k^j * T(tau))))
+    print(f"setup function:\n z_d length == {len(z_d)}")
     prover_key = []
     verifier_key = []
 
@@ -52,7 +53,7 @@ def setup(k, apoly, bpoly, cpoly, n, T):
     return prover_key, verifier_key
 
 
-def prover(prover_key, z, h):
+def prover(prover_key, input, witness, h):
     r, s = int(FF.random_element()), int(FF.random_element())
     alpha1, beta1, beta2, delta1, delta2 = prover_key[0]
     apoly1 = prover_key[1]
@@ -61,11 +62,15 @@ def prover(prover_key, z, h):
     k_pk = prover_key[4]
     z_d = prover_key[5]
 
+
     rd1, rd2 = multiply(delta1, r), multiply(delta2, r)
     sd1, sd2 = multiply(delta1, s), multiply(delta2, s)
     ar1 = add(alpha1, rd1)
     bs1 = add(beta1, sd1)
     bs2 = add(beta2, sd2)
+
+    z = [1] + input + witness
+    k = len(input)
     for i in range(len(apoly1)):
         ar1 = add(ar1, multiply(apoly1[i], int(z[i])))
         bs1 = add(bs1, multiply(bpoly1[i], int(z[i])))
@@ -76,23 +81,29 @@ def prover(prover_key, z, h):
     rsd1 = multiply(sd1, r)
     krs1 = add(krs1, neg(rsd1))
 
+    print(f"prover function:\n z_d == {z_d}")
+    print(f"prover function:\n h == {h}")
     for i in range(len(k_pk)):
-        krs1 = add(krs1, multiply(k_pk[i], int(z[i])))
+        #здесь косяк -- теперь его нет
+        krs1 = add(krs1, multiply(k_pk[k + 1], int(z[i])))
     for i in range(len(z_d)):
         krs1 = add(krs1, multiply(z_d[i], int(h[i])))
-
     return [ar1, bs2, krs1]
 
 
-def verifier(verifier_key, proof, x):
+def verifier(verifier_key, proof, input):
+    input = [1] + input
+    input = [int(elem) for elem in input]
+    print(f"verifier function: \ninput == {input}")
     ab_pairing, gamma2, delta2, k_vk = verifier_key
     ar1, bs2, krs1 = proof
     p1 = pairing(bs2, ar1)
     p2 = ab_pairing
 
-    kx_sum = multiply(k_vk[0], x[0])
+    kx_sum = multiply(k_vk[0], input[0])
+    assert(len(input) == len(k_vk))
     for i in range(1, len(k_vk)):
-        kx_sum = add(kx_sum, multiply(k_vk[i], x[i]))
+        kx_sum = add(kx_sum, multiply(k_vk[i], input[i]))
     p2 += pairing(gamma2, kx_sum)
     p2 += pairing(delta2, krs1)
     return p1 == p2
@@ -111,15 +122,13 @@ def main():
     v4 = 4 * v1 * v2
     out = 5*x**3 - 4*x**2*y**2 + 13*x*y**2 + x**2 - 10*y
     input = [out]
-    w = [x, y, v1, v2, v3, v4]
-    print([1] + input + w)
-    z = vector(FF, [1] + input + w)
+    witness = [x, y, v1, v2, v3, v4]
+    z = vector(FF, [1] + input + witness)
     Lp, Rp, Op, T, h = qap_instance(L, R, O, z)
     k = len(input)
-    n = len(z) - k - 1
-    pk, vk = setup(1, Lp, Rp, Op, n, T)
-    proof = prover(pk, z, h)
-    res = verifier(vk, proof, x)
+    pk, vk = setup(k, Lp, Rp, Op, Lp.nrows(), T)
+    proof = prover(pk, input, witness, h)
+    res = verifier(vk, proof, input)
     print(res)
 
 
