@@ -7,11 +7,13 @@ def matrix_to_polynomials(matrix, FF):
             x = FF(j+1)
             y = matrix[j][i]
             points.append((x, y))
+        print(f"points == {points}")
         poly = PR_k.lagrange_polynomial(points)
-        coefs = poly.list()[::-1]
+        coefs = poly.list()
         if len(coefs) < row:
-            coefs = [0] * (row - len(coefs)) + coefs
-        poly_list.append(coefs[::-1])
+            coefs = coefs + [0] * (row - len(coefs))
+        poly_list.append(coefs)
+        check_poly = PR_k(coefs)
     return Matrix(FF, poly_list)
 
 
@@ -31,15 +33,10 @@ def create_vanishing_polynomial(U, V, W, Z_d):
     T = create_target_polynomial(Z_d)
     h = (U * V - W) // T
     print(f"vanishing polynomial degree = {h.degree()}")
-    return h.list()
-
-
-def test_vanishing_polynomial(U, V, W, T, h):
-    h = PR_k(h)
     for i in range(1, 100):
         tau = FF.random_element()
         assert(U * V == W + h * T)
-    print("GOOOOL")
+    return h.list()
 
 
 def qap_instance(L, R, O, w):
@@ -49,6 +46,7 @@ def qap_instance(L, R, O, w):
 
     LRw = Lw.pairwise_product(Rw)
 
+    assert(LRw == Ow)
     Lp = matrix_to_polynomials(L, FF)
     Rp = matrix_to_polynomials(R, FF)
     Op = matrix_to_polynomials(O, FF)
@@ -59,7 +57,6 @@ def qap_instance(L, R, O, w):
 
     Z_d = create_zd(L.nrows())
     T = create_target_polynomial(Z_d)
-    print(f"qap_instance function:\n T == {T}")
     h = create_vanishing_polynomial(A, B, C, Z_d)
     return Lp, Rp, Op, T, h
 
